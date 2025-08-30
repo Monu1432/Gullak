@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Money Bank Statement</title>
+  <style>
+    :root {  
+      --bg-primary: #121212;
+      --bg-secondary: #1e1e1e;
+      --bg-tertiary: #252525;
+      --text-primary: #ffffff;
+      --text-secondary: #b3b3b3;
+      --accent-green: #4caf50;
+      --accent-yellow: #ffc107;
+      --accent-red: #f44336;
+      --accent-blue: #2196f3;
+      --shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      --radius: 8px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-primary); color: var(--text-primary); min-height: 100vh; padding: 20px; line-height: 1.6; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header { background-color: var(--bg-secondary); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 20px; text-align: center; }
+    header h1 { font-size: 2.2rem; margin-bottom: 10px; color: var(--accent-blue); }
+    .total-amount { font-size: 2.5rem; font-weight: bold; color: var(--accent-green); }
+
+    /* Investment Board */
+    .investment-board {
+      background-color: var(--bg-secondary);
+      padding: 20px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      display: none; /* hidden by default */
+    }
+    .board-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+      gap: 8px;
+      margin-top: 15px;
+    }
+    .board-box {
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
+      text-align: center;
+      padding: 10px;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s ease;
+    }
+    .board-box.used { background-color: #4caf50; color: white; cursor: not-allowed; opacity: 0.7; }
+    .board-box:hover:not(.used) { background-color: #357a38; transform: scale(1.05); }
+
+    .quick-add, .deposit-form, .statement, footer {
+      background-color: var(--bg-secondary);
+      padding: 20px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+    .denomination-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+    .denom-btn {
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: none;
+      padding: 15px 10px;
+      border-radius: var(--radius);
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .denom-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); }
+    .denom-100 { background-color: #2a6b2f; }
+    .denom-200 { background-color: #357a38; }
+    .denom-500 { background-color: #3d8b40; }
+    .denom-1000 { background-color: #4caf50; }
+
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; color: var(--text-secondary); }
+    .form-group input, .form-group select {
+      width: 100%; padding: 12px; border-radius: var(--radius);
+      border: 1px solid #333; background-color: var(--bg-tertiary);
+      color: var(--text-primary); font-size: 1rem;
+    }
+    .add-btn {
+      background-color: var(--accent-green);
+      color: white; border: none; padding: 12px 20px;
+      border-radius: var(--radius); font-size: 1.1rem;
+      font-weight: bold; cursor: pointer; width: 100%;
+    }
+    .add-btn:hover { background-color: #3d8b40; }
+
+    footer { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+    .footer-btn { padding: 12px 20px; border-radius: var(--radius); font-size: 1rem; font-weight: bold; cursor: pointer; border: none; flex: 1; min-width: 120px; }
+    .clear-btn { background-color: var(--accent-red); color: white; }
+    .export-btn { background-color: var(--accent-yellow); color: black; }
+    .print-btn { background-color: var(--accent-blue); color: white; }
+    .footer-btn:hover { opacity: 0.9; transform: translateY(-2px); }
+
+    /* Toggle button */
+    .show-board-btn {
+      display: block;
+      margin: 10px auto 20px auto;
+      padding: 12px 20px;
+      font-size: 1.1rem;
+      background-color: var(--accent-yellow);
+      color: black;
+      font-weight: bold;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    .show-board-btn:hover { background-color: #e0a800; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Money Bank Statement</h1>
+    <div class="total-amount" id="totalAmount">₹0</div>
+    <p>Total Deposited Amount</p>
+  </header>
+
+  <!-- Button to toggle board -->
+  <button class="show-board-btn" id="showBoardBtn">Check Investment Target</button>
+
+  <!-- Investment Board -->
+  <section class="investment-board" id="investmentBoard">
+    <h2>Investment Board (Target ₹1,00,000)</h2>
+    <div class="board-grid" id="boardGrid"></div>
+    <p id="targetMessage" style="margin-top:15px; font-weight:bold; color:#ffc107;"></p>
+  </section>
+
+  <!-- Quick Add -->
+  <section class="quick-add">
+    <h2>Quick Add</h2>
+    <div class="denomination-grid">
+      <button class="denom-btn denom-100" data-amount="100">₹100</button>
+      <button class="denom-btn denom-200" data-amount="200">₹200</button>
+      <button class="denom-btn denom-500" data-amount="500">₹500</button>
+      <button class="denom-btn denom-1000" data-amount="1000">₹1000</button>
+    </div>
+  </section>
+
+  <!-- Deposit Form -->
+  <section class="deposit-form">
+    <h2>Add Custom Deposit</h2>
+    <div class="form-group">
+      <label for="amount">Amount (₹)</label>
+      <input type="number" id="amount" placeholder="Enter amount" min="1">
+    </div>
+    <div class="form-group">
+      <label for="note">Note</label>
+      <select id="note">
+        <option value="Cash">Cash</option>
+        <option value="UPI">UPI</option>
+        <option value="Bank Transfer">Bank Transfer</option>
+        <option value="Check">Check</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <button class="add-btn" id="addDepositBtn">Add Deposit</button>
+  </section>
+
+  <!-- Statement -->
+  <section class="statement">
+    <h2>Transaction Statement</h2>
+    <table class="statement-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Date & Time</th>
+          <th>Note</th>
+          <th>Deposit Amount</th>
+          <th>Running Total</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody id="statementBody"></tbody>
+    </table>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <button class="footer-btn clear-btn" id="clearAllBtn">Clear All</button>
+    <button class="footer-btn export-btn" id="exportBtn">Export CSV</button>
+    <button class="footer-btn print-btn" id="printBtn">Print</button>
+  </footer>
+</div>
+
+<script>
+  let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+  let runningTotal = 0;
+
+  const totalAmountElement = document.getElementById('totalAmount');
+  const statementBody = document.getElementById('statementBody');
+  const amountInput = document.getElementById('amount');
+  const noteSelect = document.getElementById('note');
+  const addDepositBtn = document.getElementById('addDepositBtn');
+  const clearAllBtn = document.getElementById('clearAllBtn');
+  const exportBtn = document.getElementById('exportBtn');
+  const printBtn = document.getElementById('printBtn');
+  const denomButtons = document.querySelectorAll('.denom-btn');
+  const boardGrid = document.getElementById('boardGrid');
+  const targetMessage = document.getElementById('targetMessage');
+  const investmentBoard = document.getElementById('investmentBoard');
+  const showBoardBtn = document.getElementById('showBoardBtn');
+  const targetAmount = 100000;
+  let boardGenerated = false;
+
+  const denominations = [
+    ...Array(15).fill(1000),
+    ...Array(70).fill(500),
+    ...Array(160).fill(200),
+    ...Array(180).fill(100),
+  ];
+
+  function init() {
+    updateTotal();
+    renderStatement();
+    checkTarget();
+  }
+
+  function updateTotal() {
+    runningTotal = transactions.reduce((t, tr) => t + tr.amount, 0);
+    totalAmountElement.textContent = `₹${runningTotal.toLocaleString('en-IN')}`;
+  }
+
+  function renderStatement() {
+    statementBody.innerHTML = '';
+    let currentTotal = 0;
+    transactions.forEach((tr, i) => {
+      currentTotal += tr.amount;
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${tr.dateTime}</td>
+        <td>${tr.note}</td>
+        <td>₹${tr.amount.toLocaleString('en-IN')}</td>
+        <td>₹${currentTotal.toLocaleString('en-IN')}</td>
+        <td><button class="delete-btn" data-index="${i}">Delete</button></td>
+      `;
+      statementBody.appendChild(row);
+    });
+    document.querySelectorAll('.delete-btn').forEach(btn=>{
+      btn.addEventListener('click',function(){
+        deleteTransaction(this.getAttribute('data-index'));
+      });
+    });
+  }
+
+  function addTransaction(amount, note) {
+    if (!amount || amount <= 0) { alert("Enter valid amount"); return; }
+    const now = new Date();
+    const transaction = {
+      amount: parseFloat(amount),
+      note,
+      dateTime: now.toLocaleString('en-IN')
+    };
+    transactions.push(transaction);
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+    updateTotal(); renderStatement(); checkTarget();
+    amountInput.value = '';
+  }
+
+  function deleteTransaction(i) {
+    transactions.splice(i,1);
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+    updateTotal(); renderStatement(); checkTarget();
+  }
+
+  function clearAllTransactions() {
+    if (confirm("Clear all transactions?")) {
+      transactions=[]; localStorage.removeItem('transactions');
+      updateTotal(); renderStatement(); checkTarget();
+      document.querySelectorAll('.board-box').forEach(b=>b.classList.remove('used'));
+    }
+  }
+
+  function exportToCSV() {
+    if (transactions.length===0) return alert("No transactions");
+    let csv="Index,Date & Time,Note,Deposit Amount,Running Total\n";
+    let current=0;
+    transactions.forEach((tr,i)=>{
+      current+=tr.amount;
+      csv+=`${i+1},${tr.dateTime},${tr.note},${tr.amount},${current}\n`;
+    });
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download="bank-statement.csv";a.click();
+  }
+
+  function printStatement() {
+    let html="<h1>Money Bank Statement</h1>";
+    html+=`<h2>Total: ₹${runningTotal.toLocaleString('en-IN')}</h2>`;
+    html+="<table border='1' cellspacing='0' cellpadding='5'><tr><th>#</th><th>Date & Time</th><th>Note</th><th>Amount</th><th>Running Total</th></tr>";
+    let current=0;
+    transactions.forEach((tr,i)=>{
+      current+=tr.amount;
+      html+=`<tr><td>${i+1}</td><td>${tr.dateTime}</td><td>${tr.note}</td><td>₹${tr.amount}</td><td>₹${current}</td></tr>`;
+    });
+    html+="</table>";
+    const w=window.open("");w.document.write(html);w.print();w.close();
+  }
+
+  function generateBoard() {
+    if (boardGenerated) return; // only generate once
+    boardGrid.innerHTML='';
+    denominations.forEach((val)=>{
+      const box=document.createElement('div');
+      box.className='board-box';
+      box.textContent=`₹${val}`;
+      box.dataset.amount=val;
+      box.addEventListener('click',function(){
+        if(box.classList.contains('used'))return;
+        addTransaction(val,"Board Ticket");
+        box.classList.add('used');
+      });
+      boardGrid.appendChild(box);
+    });
+    boardGenerated = true;
+  }
+
+  function checkTarget() {
+    if (runningTotal>=targetAmount) {
+      targetMessage.textContent="🎉 Target Completed: ₹1,00,000 Reached!";
+    } else {
+      targetMessage.textContent=`Progress: ₹${runningTotal.toLocaleString('en-IN')} / ₹${targetAmount.toLocaleString('en-IN')}`;
+    }
+  }
+
+  // Toggle board show/hide
+  showBoardBtn.addEventListener('click', ()=>{
+    if (investmentBoard.style.display === "none" || investmentBoard.style.display === "") {
+      investmentBoard.style.display = "block";
+      generateBoard();
+      checkTarget();
+      showBoardBtn.textContent = "Hide Investment Board";
+    } else {
+      investmentBoard.style.display = "none";
+      showBoardBtn.textContent = "Check Investment Target";
+    }
+  });
+
+  addDepositBtn.addEventListener('click',()=>addTransaction(amountInput.value,noteSelect.value));
+  clearAllBtn.addEventListener('click',clearAllTransactions);
+  exportBtn.addEventListener('click',exportToCSV);
+  printBtn.addEventListener('click',printStatement);
+  denomButtons.forEach(btn=>{
+    btn.addEventListener('click',()=>addTransaction(btn.getAttribute('data-amount'),"Cash"));
+  });
+  amountInput.addEventListener('keypress',e=>{
+    if(e.key==='Enter') addTransaction(amountInput.value,noteSelect.value);
+  });
+
+  init();
+</script>
+</body>
+</html>
