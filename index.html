@@ -32,7 +32,7 @@
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       margin-bottom: 20px;
-      display: none; /* hidden by default */
+      display: none;
     }
     .board-grid {
       display: grid;
@@ -100,7 +100,6 @@
     .print-btn { background-color: var(--accent-blue); color: white; }
     .footer-btn:hover { opacity: 0.9; transform: translateY(-2px); }
 
-    /* Toggle button */
     .show-board-btn {
       display: block;
       margin: 10px auto 20px auto;
@@ -125,17 +124,14 @@
     <p>Total Deposited Amount</p>
   </header>
 
-  <!-- Button to toggle board -->
   <button class="show-board-btn" id="showBoardBtn">Check Investment Target</button>
 
-  <!-- Investment Board -->
   <section class="investment-board" id="investmentBoard">
     <h2>Investment Board (Target ₹1,00,000)</h2>
     <div class="board-grid" id="boardGrid"></div>
     <p id="targetMessage" style="margin-top:15px; font-weight:bold; color:#ffc107;"></p>
   </section>
 
-  <!-- Quick Add -->
   <section class="quick-add">
     <h2>Quick Add</h2>
     <div class="denomination-grid">
@@ -146,7 +142,6 @@
     </div>
   </section>
 
-  <!-- Deposit Form -->
   <section class="deposit-form">
     <h2>Add Custom Deposit</h2>
     <div class="form-group">
@@ -166,7 +161,6 @@
     <button class="add-btn" id="addDepositBtn">Add Deposit</button>
   </section>
 
-  <!-- Statement -->
   <section class="statement">
     <h2>Transaction Statement</h2>
     <table class="statement-table">
@@ -184,7 +178,6 @@
     </table>
   </section>
 
-  <!-- Footer -->
   <footer>
     <button class="footer-btn clear-btn" id="clearAllBtn">Clear All</button>
     <button class="footer-btn export-btn" id="exportBtn">Export CSV</button>
@@ -194,6 +187,7 @@
 
 <script>
   let transactions = JSON.parse(localStorage.getItem('transactions')) || [];
+  let usedBoardIndexes = JSON.parse(localStorage.getItem('usedBoardIndexes')) || [];
   let runningTotal = 0;
 
   const totalAmountElement = document.getElementById('totalAmount');
@@ -274,8 +268,11 @@
   }
 
   function clearAllTransactions() {
-    if (confirm("Clear all transactions?")) {
-      transactions=[]; localStorage.removeItem('transactions');
+    if (confirm("Clear all transactions and reset board?")) {
+      transactions=[]; 
+      usedBoardIndexes=[];
+      localStorage.removeItem('transactions');
+      localStorage.removeItem('usedBoardIndexes');
       updateTotal(); renderStatement(); checkTarget();
       document.querySelectorAll('.board-box').forEach(b=>b.classList.remove('used'));
     }
@@ -309,17 +306,20 @@
   }
 
   function generateBoard() {
-    if (boardGenerated) return; // only generate once
+    if (boardGenerated) return;
     boardGrid.innerHTML='';
-    denominations.forEach((val)=>{
+    denominations.forEach((val, idx)=>{
       const box=document.createElement('div');
       box.className='board-box';
       box.textContent=`₹${val}`;
-      box.dataset.amount=val;
+      box.dataset.index=idx;
+      if (usedBoardIndexes.includes(idx)) box.classList.add('used');
       box.addEventListener('click',function(){
         if(box.classList.contains('used'))return;
         addTransaction(val,"Board Ticket");
         box.classList.add('used');
+        usedBoardIndexes.push(idx);
+        localStorage.setItem('usedBoardIndexes', JSON.stringify(usedBoardIndexes));
       });
       boardGrid.appendChild(box);
     });
@@ -334,7 +334,6 @@
     }
   }
 
-  // Toggle board show/hide
   showBoardBtn.addEventListener('click', ()=>{
     if (investmentBoard.style.display === "none" || investmentBoard.style.display === "") {
       investmentBoard.style.display = "block";
